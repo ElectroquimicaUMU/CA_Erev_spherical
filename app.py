@@ -15,10 +15,11 @@ r0 = st.sidebar.number_input("Radio del electrodo r₀ [m]", value=1e-4, format=
 E0 = st.sidebar.number_input("E⁰' [V]", value=0.0)
 E = st.sidebar.slider("Potencial aplicado E [V]", min_value=-1.0, max_value=1.0, value=0.1)
 t_max = st.sidebar.slider("Duración del experimento [s]", min_value=1.0, max_value=20.0, value=10.0, step=1.0)
-n_frames = st.sidebar.slider("Número de frames", min_value=10, max_value=200, value=100)
+n_frames = st.sidebar.slider("Número de frames (perfil concentración)", min_value=10, max_value=200, value=100)
 
 # --- Tiempo y distancia ---
-t_vals = np.linspace(0.01, t_max, n_frames)
+t_highres = np.arange(0.01, t_max + 0.01, 0.01)  # Resolución fija para j(t)
+t_frames = np.linspace(0.01, t_max, n_frames)    # Frames para animación
 r_vals = np.linspace(r0, 5 * r0, 200)
 
 # --- Contenedor para los gráficos ---
@@ -28,10 +29,11 @@ placeholder2 = col2.empty()
 
 # --- Botón para ejecutar la animación ---
 if st.button("▶ Reproducir animación"):
-    j_vals = []
+    # Precalcular densidad de corriente en alta resolución
+    j_vals = [current_density(E, t, c_ox_star, D_ox, r0, E0) for t in t_highres]
 
-    for i, t in enumerate(t_vals):
-        # Perfil de concentración
+    for t in t_frames:
+        # --- Perfil de concentración ---
         c_vals = c_ox(r_vals, t, E, c_ox_star, D_ox, r0, E0)
         fig1, ax1 = plt.subplots()
         ax1.plot(r_vals * 1e6, c_vals)
@@ -41,14 +43,15 @@ if st.button("▶ Reproducir animación"):
         ax1.grid()
         placeholder1.pyplot(fig1)
 
-        # Densidad de corriente acumulada
-        j_vals.append(current_density(E, t, c_ox_star, D_ox, r0, E0))
+        # --- Densidad de corriente con línea roja de tiempo actual ---
         fig2, ax2 = plt.subplots()
-        ax2.plot(t_vals[:i+1], j_vals)
+        ax2.plot(t_highres, j_vals, label="j(t)")
+        ax2.axvline(t, color='red', linestyle='--', label=f"t = {t:.2f} s")
         ax2.set_xlabel("Tiempo (s)")
         ax2.set_ylabel("Densidad de corriente (A/m²)")
         ax2.set_title("Densidad de corriente vs tiempo")
+        ax2.legend()
         ax2.grid()
         placeholder2.pyplot(fig2)
 
-        time.sleep(0.05)  # Control de velocidad de animación
+        time.sleep(0.05)  # Control de velocidad
