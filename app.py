@@ -1,50 +1,50 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-from main import c_ox, current, F
+import time
+from main import c_ox, current_density, F
 
 st.set_page_config(page_title="Cronoamperometría Esférica", layout="wide")
-
 st.title("Cronoamperometría en Electrodo Esférico")
 
 # --- Parámetros de entrada ---
-st.sidebar.header("Parámetros")
+st.sidebar.header("Parámetros del sistema")
 c_ox_star = st.sidebar.number_input("c*Ox [mol/m³]", value=1.0)
 D_ox = st.sidebar.number_input("D_Ox [m²/s]", value=1e-9, format="%.1e")
 r0 = st.sidebar.number_input("Radio del electrodo r₀ [m]", value=1e-4, format="%.1e")
-A = st.sidebar.number_input("Área del electrodo [m²]", value=4 * np.pi * r0**2, format="%.2e")
 E0 = st.sidebar.number_input("E⁰' [V]", value=0.0)
 E = st.sidebar.slider("Potencial aplicado E [V]", min_value=-1.0, max_value=1.0, value=0.1)
-n = st.sidebar.number_input("Número de electrones (n)", value=1, step=1)
+t_max = st.sidebar.slider("Duración del experimento [s]", min_value=1.0, max_value=20.0, value=10.0, step=1.0)
+n_frames = st.sidebar.slider("Frames del video", min_value=20, max_value=200, value=100)
 
 # --- Tiempo y distancia ---
-t_vals = np.logspace(-3, 1, 200)  # Tiempo de 1 ms a 10 s
-r_vals = np.linspace(r0, 5*r0, 200)
+t_vals = np.linspace(0.01, t_max, n_frames)  # Desde 0.01 s para evitar división por 0
+r_vals = np.linspace(r0, 5 * r0, 200)
 
-# --- Gráfico de concentración vs radio ---
-st.subheader("Perfil de concentración c_Ox(r, t)")
+# --- Animaciones ---
+placeholder1 = st.empty()
+placeholder2 = st.empty()
 
-t_plot = st.slider("Selecciona un tiempo para el perfil de concentración [s]", float(t_vals[0]), float(t_vals[-1]), 1.0, step=0.1)
-c_vals = c_ox(r_vals, t_plot, E, c_ox_star, D_ox, r0, E0)
+for t in t_vals:
+    # --- Perfil de concentración ---
+    c_vals = c_ox(r_vals, t, E, c_ox_star, D_ox, r0, E0)
+    fig1, ax1 = plt.subplots()
+    ax1.plot(r_vals * 1e6, c_vals)
+    ax1.set_xlabel("r (μm)")
+    ax1.set_ylabel("c_Ox (mol/m³)")
+    ax1.set_title(f"Perfil de concentración en t = {t:.2f} s")
+    ax1.grid()
+    placeholder1.pyplot(fig1)
 
-fig1, ax1 = plt.subplots()
-ax1.plot(r_vals * 1e6, c_vals)
-ax1.set_xlabel("r (μm)")
-ax1.set_ylabel("c_Ox (mol/m³)")
-ax1.set_title(f"Perfil de concentración en t = {t_plot:.2f} s")
-ax1.grid()
-st.pyplot(fig1)
+    # --- Densidad de corriente ---
+    j_vals = [current_density(E, t_i, c_ox_star, D_ox, r0, E0) for t_i in t_vals[:int(t / t_max * n_frames)]]
+    t_sub = t_vals[:len(j_vals)]
+    fig2, ax2 = plt.subplots()
+    ax2.plot(t_sub, j_vals)
+    ax2.set_xlabel("Tiempo (s)")
+    ax2.set_ylabel("Densidad de Corriente (A/m²)")
+    ax2.set_title("Densidad de corriente vs tiempo")
+    ax2.grid()
+    placeholder2.pyplot(fig2)
 
-# --- Gráfico de corriente vs tiempo ---
-st.subheader("Corriente vs tiempo I(t)")
-
-I_vals = [current(E, t, n, F, A, c_ox_star, D_ox, r0, E0) for t in t_vals]
-
-fig2, ax2 = plt.subplots()
-ax2.plot(t_vals, I_vals)
-ax2.set_xscale("log")
-ax2.set_xlabel("Tiempo (s)")
-ax2.set_ylabel("Corriente (A)")
-ax2.set_title("Corriente vs Tiempo")
-ax2.grid()
-st.pyplot(fig2)
+    time.sleep(0.05)  # Simula la reproducción en tiempo real

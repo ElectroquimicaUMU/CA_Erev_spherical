@@ -3,7 +3,7 @@ from scipy.special import erfc
 
 F = 96485  # C/mol
 R = 8.314  # J/mol·K
-T = 298    # K (temperatura ambiente)
+T = 298    # K
 
 
 def eta(E, E0):
@@ -11,7 +11,7 @@ def eta(E, E0):
 
 
 def c_ox_surface(c_ox_star, eta_val):
-    return c_ox_star / (1 + np.exp(eta_val))
+    return c_ox_star * np.exp(eta_val) / (1 + np.exp(eta_val))
 
 
 def c_ox(r, t, E, c_ox_star, D_ox, r0, E0):
@@ -21,9 +21,9 @@ def c_ox(r, t, E, c_ox_star, D_ox, r0, E0):
     return c_ox_star - term
 
 
-def current(E, t, n, F, A, c_ox_star, D_ox, r0, E0):
+def current_density(E, t, c_ox_star, D_ox, r0, E0):
     eta_val = eta(E, E0)
-    factor = 1 / (1 + np.exp(eta_val))
-    term1 = 1 / (np.sqrt(np.pi * D_ox * t))
+    factor = np.exp(eta_val) / (1 + np.exp(eta_val))
+    term1 = 1 / np.sqrt(np.pi * D_ox * t)
     term2 = 1 / r0
-    return n * F * A * c_ox_star * D_ox * (term1 + term2) * factor
+    return F * c_ox_star * D_ox * (term1 + term2) * factor
