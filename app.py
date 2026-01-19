@@ -13,7 +13,7 @@ D_ox = st.sidebar.number_input("D_Ox [m²/s]", value=1e-9, format="%.1e")
 r0 = st.sidebar.number_input("Radio del electrodo r₀ [m]", value=1e-4, format="%.1e")
 E0 = st.sidebar.number_input("E⁰' [V]", value=0.0)
 E = st.sidebar.slider("Potencial aplicado E [V]", min_value=-1.0, max_value=1.0, value=0.1)
-t_max = st.sidebar.slider("Duración del experimento [s]", min_value=1.0, max_value=20.0, value=10.0, step=1)
+t_max = st.sidebar.slider("Duración del experimento [s]", min_value=1.0, max_value=20.0, value=10.0, step=1.0)
 n_frames = st.sidebar.slider("Resolución temporal (# frames)", min_value=10, max_value=200, value=100)
 
 # --- Tiempo y distancia ---
